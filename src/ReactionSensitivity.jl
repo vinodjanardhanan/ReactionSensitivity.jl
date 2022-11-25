@@ -1,15 +1,19 @@
 module ReactionSensitivity
 using LightXML, Printf
-using DifferentialEquations, Statistics, GlobalSensitivity, QuasiMonteCarlo
+using DifferentialEquations, Statistics, GlobalSensitivity, QuasiMonteCarlo, Sundials
 using ReactionCommons, RxnHelperUtils, SurfaceReactions
 using BatchReactor, PlugFlowReactor, StirredReactor
 
 export  rxn_gsa
 global o_streams
+global gsa_model
 
-@enum ModelOut mean=1 final =2
+struct Solver 
+    abstol::Float64
+    reltol::Float64
+end
 
-struct  gsa_parameters 
+struct  Gsa_parameters 
     monitor::Array{String,1}   
     lower_pc::Float64
     upper_pc::Float64
@@ -38,16 +42,9 @@ function rxn_gsa(input_file::AbstractString, lib_dir::AbstractString)
     # Size of the sample
     sample_N = Int(get_value_from_xml(xmlroot,"gsa_N"))
 
-    output = get_text_from_xml(xmlroot, "model_out")
-    if uppercase(output) == "MEAN"
-        model_out = mean 
-    elseif uppercase(output) == "FINAL"
-        model_out = final
-    end
-
     # get the reactions id which forms the parameter 
     gsa_srxn_ids,gsa_srxn_constraint_ids = get_rxn_ids(xmlroot,"p_smech")              
-    gsa_p = gsa_parameters(gsa_species,lower_pc,upper_pc,sample_N,gsa_srxn_ids,gsa_srxn_constraint_ids)
+    gsa_p = Gsa_parameters(gsa_species,lower_pc,upper_pc,sample_N,gsa_srxn_ids,gsa_srxn_constraint_ids)
     
 
     # get the reactor model 
@@ -64,7 +61,12 @@ function rxn_gsa(input_file::AbstractString, lib_dir::AbstractString)
 
     
     model_root = root(parse_file(model))
-    gsa_model = name(model_root)
+    global gsa_model = name(model_root)
+
+
+    abstol = get_value_from_xml(xmlroot,"abstol")
+    reltol = get_value_from_xml(xmlroot, "reltol")
+    soln_cntrl = Solver(abstol, reltol)
 
     #= output file generation =#
     # header_data = [ "p"*string(k) for k in gsa_p.gsa_srxn_ids]    
@@ -77,19 +79,22 @@ function rxn_gsa(input_file::AbstractString, lib_dir::AbstractString)
 
 
     if lowercase(strip(gsa_model)) == "batch"
+        println("Performing global sensitivity analysis using Batch reactor model")
         chem = Chemistry(true, false, false, f->())
         params, prob, t_span = batch_reactor(model,lib_dir,true, chem)        
-        retcode = gsa_problem(params, prob, t_span, gsa_p, model_out)       
+        retcode = gsa_problem(params, prob, t_span, gsa_p, soln_cntrl)       
         return retcode
     elseif lowercase(strip(gsa_model)) == "cstr"
+        println("Performing global sensitivity analysis using CSTR model")
         chem = Chemistry(true, false, false, f->())
         params, prob, t_span = cstr(model,lib_dir,true, chem)        
-        retcode = gsa_problem(params, prob, t_span, gsa_p, model_out)               
+        retcode = gsa_problem(params, prob, t_span, gsa_p, soln_cntrl)               
         return retcode
     elseif lowercase(strip(gsa_model)) == "plug"
+        println("Performing global sensitivity analysis using Plug flow model")
         chem = Chemistry(true, false, false, f->())
         params, prob, t_span = plug(model,lib_dir,true, chem)        
-        retcode = gsa_problem(params, prob, t_span, gsa_p, model_out)               
+        retcode = gsa_problem(params, prob, t_span, gsa_p, soln_cntrl)               
         return retcode
     else
         println("Models yet to be implemented\n")
@@ -105,7 +110,7 @@ A common function for all reactor models to define the sensitivity problem
 -   prob : the problem definition for the reactor model 
 -   gsa_p : struct of the type gsa_parameters
 """
-function gsa_problem(params, prob, t_span, gsa_p::gsa_parameters, model_out)
+function gsa_problem(params, prob, t_span, gsa_p::Gsa_parameters, soln_cntrl::Solver)
     gsa_smech_params = Array{Float64,1}()
     state, thermo_obj, md, cp, chem = params        
     n_surface_species = length(md.sm.species) # number of surface species 
@@ -123,20 +128,17 @@ function gsa_problem(params, prob, t_span, gsa_p::gsa_parameters, model_out)
     parameter_ratio = Array{Float64,1}()  # Array for storing the original parameter ratio (forward to reverse)
     if count(x->x>0, gsa_p.gsa_srxn_constraint_ids) > 0
         # get the initial parameter ratios if the reverse reaction constraints are specified
-        initial_parameter_ratio!(parameter_ratio, gsa_p.gsa_srxn_ids, gsa_p.gsa_srxn_constraint_ids,md)        
-    end        
-    retcode = perform_gsa(params,prob, t_span, gsa_p, lb, ub, parameter_ratio, model_out)
+        initial_parameter_ratio!(parameter_ratio, gsa_p.gsa_srxn_ids, gsa_p.gsa_srxn_constraint_ids,md)          
+    end 
+    
+    retcode = perform_gsa(params,prob, t_span, gsa_p, lb, ub, parameter_ratio, soln_cntrl)
+    return retcode
+
 end
 
 
-function perform_gsa(params, prob, t_span, gsa_p::gsa_parameters,lb::Array{Float64,1}, ub::Array{Float64,1}, parameter_ratio::Array{Float64,1}, model_out)
+function perform_gsa(params, prob, t_span, gsa_p::Gsa_parameters,lb::Array{Float64,1}, ub::Array{Float64,1}, parameter_ratio::Array{Float64,1}, soln_cntrl::Solver)
     state, thermo_obj, md, cp, chem = params 
-    
-    if model_out == mean
-        time_points = collect(range(t_span[1],stop=t_span[2],length=50))
-    else
-        time_points = collect(range(t_span[1],stop=t_span[2],length=2))
-    end
 
     #Get the name of all gasphase species 
     species_list = Array{String,1}()
@@ -153,32 +155,31 @@ function perform_gsa(params, prob, t_span, gsa_p::gsa_parameters,lb::Array{Float
     
     
     func_eval_count = 0
-    t_calls = gsa_p.N*(2+length(gsa_p.gsa_srxn_ids))     
+    t_calls = gsa_p.N*(2+length(gsa_p.gsa_srxn_ids))         
     println("Total function calls :", t_calls)
-    function sens(gsa_params::Array{Float64})                
-        model_response = zeros(length(monitor_species_ids))
+    cb = FunctionCallingCallback(monitor_integration)
+    model_response = zeros(length(monitor_species_ids))
+    
+    function sens(gsa_params::Array{Float64})                        
         func_eval_count += 1
-        println("Sample @ ", func_eval_count, " Remaining: ", t_calls-func_eval_count)
+        println(func_eval_count-t_calls)
         # println("Parameters ", gsa_params)
         SurfaceReactions.update_params!(md,gsa_params,gsa_p.gsa_srxn_ids,gsa_p.gsa_srxn_constraint_ids,parameter_ratio)
         params_updated = (state, thermo_obj, md, cp, chem)
         s_prob = remake(prob,p=params_updated)                
-        sol = solve(s_prob,alg_hints=[:stiff] , reltol=1e-6, abstol = 1e-8, saveat=time_points)  
-        if model_out == final
+        if lowercase(strip(gsa_model)) == "plug"
+            sol = solve(s_prob, CVODE_BDF(), reltol=soln_cntrl.reltol, abstol=soln_cntrl.abstol, save_everystep=false, callback=cb)
             for k in eachindex(monitor_species_ids)                
                 model_response[k] = sol.u[end][monitor_species_ids[k]]
             end
-        elseif model_out == mean
-            x = Array{Float64,1}()
+        else
+            sol = solve(SteadyStateProblem(s_prob), DynamicSS(CVODE_BDF()), dt=1e-10, reltol=soln_cntrl.reltol, abstol=soln_cntrl.abstol, save_everystep=false)
             for k in eachindex(monitor_species_ids)                
-                for i in eachindex(sol.u)
-                    push!(x,sol.u[i][monitor_species_ids[k]])                
-                end     
-                model_response[k] =  Statistics.mean(x) 
-                empty!(x)                                
-            end            
-        end        
-        model_response
+                model_response[k] = sol.u[monitor_species_ids[k]]
+            end
+        end
+        
+        return model_response
     end
 
 
@@ -349,7 +350,9 @@ function write_out(file_stream, args...)
     @printf(file_stream,"\n")
 end
 
-
+function monitor_integration(u, t, integrator)
+    @printf("%.4e\n",t)
+end
 """
 A function to extract the parameters for sensitivity analysis from the xml input 
     The function returns two integer arrays. forward_rxn_ids contains the ids of the 
