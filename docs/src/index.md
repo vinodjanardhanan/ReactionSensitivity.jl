@@ -96,7 +96,7 @@ The structure of the XML input file is shown below.
 ?xml version="1.0" encoding="ISO-8859-1"?>
 <sensitivity>
     <gsa_species>CH4 H2O H2 CO CO2 O2 N2</gsa_species>
-    <gsa_lb>5</gsa_lb>
+    <gsa_lb>30572</gsa_lb>
     <gsa_ub>10</gsa_ub>
     <gsa_N>100</gsa_N>
     <gsa_model>cstr.xml</gsa_model>
@@ -109,7 +109,7 @@ The meaning of different tags is listed below.
 - <gsa\_species>: The species that needs to be monitored for the parameter sensitivity analysis. The code will produce the output of parameter sensitivity of only those species which are listed in this element
 - <gsa\_lb>: lower percentage bound for the parameter value. For instance, if the value of the actual parameter is 100, then the lower bound considered for design matrix generation is 90 with a gsa_lb = 10
 - <gsa\_ub>: upper percentage bound for the parameter value. For instance, if the value of the actual parameter is 100, then the upper bound considered for design matrix generation is 110 with gsa_ub = 10
-- <gsa\_N>: the size of the sample size. With a sample size of 100, 100 points will be sampled between the lower and upper bounds for each parameter. The higher the sample size higher will be calculation time. 
+- <gsa\_N>: the size of the sample size. With a sample size of 100, 100 points will be sampled between the lower and upper bounds for each parameter. The higher the sample size higher will be calculation time. (suggested : 2^p, where p is the number of parameters)
 - <gsa\_model>: the reactor model that will be considered for integration. The content of the tag is the name of the XML input file of the reactor model. The file must be present in the working directory. You may copy the input file for Batch reactor, StirredReactor or PlugFlowReactor. 
 - <p\_smech>: parameters of the surface reaction mechanism that needs to be considered for sensitivity analysis. There are different options for specifying the parameter list from a mechanism
     -   All parameters: Use ":" as the value of <p\_smech> element to consider all pre-exponential factors and sticking coefficient as sensitivity parameters. In such specifications, the reverse reaction rates will not be adjusted to maintain the initial ratio. (e.g. <p\_smech>:</p_smech>)
@@ -125,51 +125,41 @@ The xml input file and the *lib* directory containig other required input files 
 ## Output
 ### Sobol first order indices
 ```
- parameter             CH4              H2              CO
-        k1      +2.3448e-06     -1.4716e-05     +1.0065e-04
-        k2      -5.4885e-07     -1.3963e-05     +3.7032e-04
-        k3      -1.7705e-06     -6.2732e-06     +2.0993e-04
-        k4      -2.9290e-06     +3.2338e-06     +5.0191e-04
-        k5      -9.9537e-07     +2.8037e-05     -2.3794e-04
-        k6      +2.0481e-06     -1.7069e-05     +4.4028e-04
-       k13      -1.4126e-06     -4.9288e-06     +1.2184e-04
-       k15      +2.4661e-01     +8.8478e-01     +2.8693e-01
-       k17      -5.3015e-06     +7.5004e-06     +3.0034e-04
-       k19      +3.0071e-01     +8.0448e-02     +3.9064e-01
-       k21      +4.5341e-06     -1.1998e-05     +7.5951e-05
-       k23      -8.9618e-07     -7.9828e-06     +1.0737e-04
-       k25      +3.5734e-01     +1.4675e-01     +3.5949e-02
-       k27      +6.8595e-02     +1.7802e-01     +5.4256e-01
-       k29      -2.3420e-04     +3.0240e-03     +9.6439e-03
-       k31      +1.0861e-03     -5.9457e-05     -2.6299e-04
-       k33      +2.7207e-04     +5.4915e-04     +1.7431e-03
-       k35      -1.0602e-04     +6.1263e-04     +2.7361e-03
-       k37      +3.2406e-06     -1.9474e-05     +3.9189e-04
-       k39      -4.8068e-06     +1.3804e-05     +3.0318e-04
-       k41      -6.1879e-06     +1.7323e-05     +1.8869e-04
+ parameter             CH4             H2O              H2              CO             CO2              O2              N2
+       k13      +3.4690e-08     -1.7068e-08     -2.8338e-09     -1.9325e-09     -1.7134e-08     -1.3293e-08     +1.1196e-05
+       k15      -6.5332e-03     +3.3629e-03     +1.8052e-03     +1.8235e-03     +3.4042e-03     -5.7777e-04     -1.3007e-01
+       k17      -3.9335e-04     +8.3314e-05     +1.7312e-05     +1.7862e-05     +8.3680e-05     -9.3703e-05     -6.8455e-03
+       k19      -6.5291e-08     -6.0111e-08     +6.8006e-09     +8.0495e-09     -6.5388e-08     -6.8575e-09     -1.7432e-05
+       k21      +7.3879e-04     -6.6383e-04     -4.2291e-04     -4.2971e-04     -6.6497e-04     -7.9864e-05     +1.7248e-02
+       k23      -4.8677e-08     -1.6787e-08     -4.9927e-09     -3.1755e-09     -9.9494e-09     -3.2560e-08     -4.4434e-06
+       k25      -1.7704e-08     +1.0263e-08     -4.4179e-09     -3.0041e-09     +1.8139e-08     -7.4624e-09     -1.4354e-06
+       k27      +1.1487e-03     +2.4962e-04     +3.6667e-03     +3.5571e-03     +6.5261e-04     -9.5928e-07     +1.2910e-02
+       k29      -2.1521e-03     +1.8689e-03     +1.4845e-03     +1.4913e-03     +1.8540e-03     +2.8824e-04     -5.4827e-02
+       k31      -2.7705e-04     +1.6704e-04     +1.3851e-04     +1.3912e-04     +1.6336e-04     -5.0479e-07     -6.4453e-03
+       k33      -1.2737e-07     +5.8412e-09     -1.3247e-07     -1.2771e-07     +3.3854e-08     -6.1005e-09     -3.0165e-05
+       k35      +9.6615e-01     +9.8403e-01     +9.6273e-01     +9.6294e-01     +9.8475e-01     +9.7775e-01     +8.4048e-01
+       k37      -1.4904e-03     +1.6085e-03     +9.7492e-04     +9.8230e-04     +1.6416e-03     +3.5735e-04     -3.8559e-02
+       k39      +2.7518e-04     -1.6529e-04     -1.2171e-04     -1.2261e-04     -1.6221e-04     +1.5000e-07     +6.2832e-03
+       k41      -2.9709e-08     -7.7295e-09     -1.7599e-09     -6.4605e-10     -2.6278e-09     -1.6481e-08     -2.9450e-06
+
 ```
 ### Sobol total indices
 ```
- parameter             CH4              H2              CO
-        k1      -2.7004e-06     +1.4402e-05     -1.0065e-04
-        k2      +5.2612e-07     +1.3897e-05     -3.6943e-04
-        k3      +1.3854e-06     +5.9647e-06     -2.0954e-04
-        k4      +2.8990e-06     -3.3247e-06     -5.0210e-04
-        k5      +5.4416e-06     -2.9566e-05     +3.5093e-04
-        k6      -2.2553e-06     +1.6854e-05     -4.3998e-04
-       k13      +1.1156e-06     +4.7096e-06     -1.2221e-04
-       k15      +3.9272e-01     -1.2662e-01     -1.9446e-01
-       k17      +5.1908e-06     -7.6530e-06     -2.9940e-04
-       k19      +2.5135e-01     +2.9465e-01     +9.3012e-01
-       k21      -4.1005e-06     +1.1996e-05     -7.8270e-05
-       k23      +7.3471e-07     +7.8210e-06     -1.0714e-04
-       k25      +2.8921e-01     +6.1753e-01     +6.1578e-02
-       k27      +1.1322e-01     -5.4445e-02     -5.0018e-02
-       k29      +8.3402e-04     -2.6450e-03     -7.7674e-03
-       k31      +8.5053e-04     +1.4107e-03     +5.0973e-03
-       k33      +4.0887e-04     -7.9329e-05     +1.0736e-06
-       k35      +1.3536e-04     -5.8887e-04     -2.6520e-03
-       k37      -3.1684e-06     +1.9450e-05     -3.9074e-04
-       k39      +4.7581e-06     -1.3864e-05     -3.0281e-04
-       k41      +6.2943e-06     -1.7289e-05     -1.8872e-04
+ parameter             CH4             H2O              H2              CO             CO2              O2              N2
+       k13      -2.1533e-08     -2.7865e-08     -4.4028e-09     -3.2608e-09     -2.7959e-08     +1.6423e-09     -1.0754e-05
+       k15      +1.4674e-02     +1.9171e-03     +8.6542e-03     +8.6329e-03     +1.3887e-03     +6.9923e-03     +1.4053e-01
+       k17      +5.7453e-04     +2.1747e-06     +2.5010e-04     +2.4889e-04     -1.2390e-05     +2.1545e-04     +7.1129e-03
+       k19      +6.4776e-08     +5.6530e-08     -1.5435e-08     -1.6307e-08     +6.1020e-08     +5.7361e-09     +1.7467e-05
+       k21      +1.1296e-04     +1.1520e-03     +1.5825e-03     +1.5845e-03     +1.1032e-03     +7.1078e-04     -1.6090e-02
+       k23      +5.8070e-08     -1.4402e-08     -1.8386e-09     -1.9859e-09     -2.0878e-08     +2.4275e-08     +4.7889e-06
+       k25      +3.5029e-08     -1.8926e-08     +1.1639e-10     -8.8117e-12     -2.4413e-08     +1.5571e-08     +1.7272e-06
+       k27      +1.5784e-03     +1.1853e-03     +7.5254e-03     +7.3373e-03     +1.8150e-03     +4.3244e-04     -1.8205e-03
+       k29      +1.2231e-02     +4.8143e-03     +1.1300e-02     +1.1290e-02     +4.2413e-03     +7.7509e-03     +6.7611e-02
+       k31      +3.7639e-04     -1.1361e-04     +2.8578e-07     -5.9457e-07     -1.1713e-04     +7.1714e-05     +6.5840e-03
+       k33      +9.0423e-08     +5.6970e-08     +3.2829e-08     +2.9780e-08     +4.8873e-08     +2.4054e-08     +3.0129e-05
+       k35      +1.0056e+00     +9.9598e-01     +9.9511e-01     +9.9520e-01     +9.9543e-01     +1.0005e+00     +1.1175e+00
+       k37      +2.3898e-02     +1.4246e-02     +2.6681e-02     +2.6668e-02     +1.3084e-02     +1.8109e-02     +6.6213e-02
+       k39      -2.7029e-04     +1.6445e-04     +1.3241e-04     +1.3296e-04     +1.6092e-04     +1.1004e-06     -6.2724e-03
+       k41      +4.1251e-08     -7.1443e-09     -2.5744e-09     -2.5212e-09     -1.1046e-08     +1.7981e-08     +3.1932e-06
+
 ```

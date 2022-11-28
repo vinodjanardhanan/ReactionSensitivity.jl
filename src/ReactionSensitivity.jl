@@ -53,7 +53,7 @@ function rxn_gsa(input_file::AbstractString, lib_dir::AbstractString)
     if Sys.islinux() || Sys.isapple()
         dirs = split(input_file, "/")        
     else
-        dirs = splice!(input_file, "\\")
+        dirs = split(input_file, "\\")
     end
     pop!(dirs)   
     push!(dirs, model)             
