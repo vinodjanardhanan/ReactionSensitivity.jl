@@ -3,7 +3,7 @@
 	<gsa_species>CH4 H2O H2 CO CO2 O2 N2</gsa_species>
 	<gsa_lb>10</gsa_lb>
 	<gsa_ub>10</gsa_ub>
-	<gsa_N>32768</gsa_N>
+	<gsa_N>15</gsa_N>
 	<gsa_model>cstr.xml</gsa_model>
 	<p_smech>13=14, 15=16, 17=18, 19=20, 21=22, 23=24, 25=26, 27=28, 29=30, 31=32, 33=34, 35=36, 37=38, 39=40, 41=42</p_smech>
 	<!--p_smech>1:6=7:12,13=14,16:20</p_smech-->
