@@ -162,7 +162,7 @@ function perform_gsa(params, prob, t_span, gsa_p::Gsa_parameters,lb::Array{Float
     
     function sens(gsa_params::Array{Float64})                        
         func_eval_count += 1
-        println(func_eval_count-t_calls)
+        # println(func_eval_count-t_calls)
         # println("Parameters ", gsa_params)
         SurfaceReactions.update_params!(md,gsa_params,gsa_p.gsa_srxn_ids,gsa_p.gsa_srxn_constraint_ids,parameter_ratio)
         params_updated = (state, thermo_obj, md, cp, chem)

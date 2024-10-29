@@ -1,7 +1,7 @@
 name = "ReactionSensitivity"
 uuid = "ed25ef7a-b813-415f-98cd-eb06d9efe1db"
 authors = ["Vinod Janardhanan"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 BatchReactor = "ae347489-fc42-416e-8e9d-f76cf1731aac"
@@ -19,18 +19,18 @@ Sundials = "c3572dad-4567-51f8-b174-8c6c989267f4"
 SurfaceReactions = "59f5dcf9-29de-47f3-bbe3-a47d1f19a124"
 
 [compat]
-BatchReactor = "0.1.1"
-DifferentialEquations = "7.5.0"
-GlobalSensitivity = "2.1.2"
-LightXML = "0.9.0"
-PlugFlowReactor = "0.1.0"
-QuasiMonteCarlo = "0.2.11"
-ReactionCommons = "0.1.6"
-RxnHelperUtils = "0.1.2"
-StirredReactor = "0.1.2"
-Sundials = "4.10.3"
-SurfaceReactions = "0.1.0"
-julia = "1.8.2"
+BatchReactor = "0.1.3"
+DifferentialEquations = "7.13.0"
+GlobalSensitivity = "2.5.0"
+LightXML = "0.9.1"
+PlugFlowReactor = "0.1.2"
+QuasiMonteCarlo = "0.3.3"
+ReactionCommons = "0.2.2"
+RxnHelperUtils = "1.0.3"
+Statistics = "1.9.0"
+Sundials = "4.24.0"
+SurfaceReactions = "0.1.6"
+julia = "1.9.1"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

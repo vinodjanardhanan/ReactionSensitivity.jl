@@ -5,3 +5,4 @@
 /docs/build/
 run
 test/*.dat
+test/*.csv
